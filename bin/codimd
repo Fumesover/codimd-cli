@@ -87,6 +87,28 @@ function authenticate() {
     fi
 }
 
+function authenticate_ldap() {
+    if [[ -z $1 ]] || [[ -z $2 ]]; then
+        echo "ERROR: You must provide an email and password."
+        echo ""
+        echo "Usage: codimd login <email> <password>"
+        echo "For usage examples, see: codimd help"
+        exit 1
+    fi
+
+    curl -c $CODIMD_COOKIES_FILE \
+        -XPOST \
+        -d "username=$1&password=$2" \
+        $CODIMD_SERVER/auth/ldap &>/dev/null
+
+    if [[ $(is_authenticated) == "ok" ]]; then
+        echo "Logged in $CODIMD_SERVER as $1 successfully."
+    else
+        echo "Invalid email or password."
+        exit 1
+    fi
+}
+
 function is_authenticated() {
     STATUS=$(curl -b $CODIMD_COOKIES_FILE $CODIMD_SERVER/me 2>/dev/null)
 
@@ -144,6 +166,8 @@ elif [[ "$1" == "export" ]]; then
     export_note "$2" "$3" "$4"
 elif [[ "$1" == "login" ]]; then
     authenticate "$2" "$3"
+elif [[ "$1" == "ldap" ]]; then
+    authenticate_ldap "$2" "$3"
 elif [[ "$1" == "logout" ]]; then
     deauthenticate
 elif [[ "$1" == "profile" ]]; then
