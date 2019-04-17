@@ -39,6 +39,9 @@ Options:
     $ $codi_cli delete 0nAp3YRyTlyQ-N3N7lCk-w
     $ $codi_cli logout
 
+    $ $codi_cli config
+    Config generated to $HOME/.config/codimd-cli/env
+
 Example:
     $ env CODIMD_SERVER='https://codimd.example.com' $codi_cli import /path/to/your/content.md
 "
@@ -117,7 +120,7 @@ function authenticate_ldap() {
 
 function authenticate() {
     if [[ -z $1 ]]; then
-        echo "Usage: codimd login [--email|--ldap]"
+        echo "Usage: codimd login [--email|--ldap|--config]"
         echo "For usage examples, see: $codi_cli help"
         exit 0
     fi
@@ -139,7 +142,7 @@ function authenticate() {
     else
         echo "ERROR: You must provide a protocol."
         echo ""
-        echo "Usage: codimd login [--email|--ldap] <login> <password>"
+        echo "Usage: codimd login [--email|--ldap|--config] <login> <password>"
         echo "For usage examples, see: $codi_cli help"
         exit 1
     fi
@@ -218,6 +221,8 @@ function write_config() {
             echo "# CODIMD_PASS=           # Your password"
             echo "# CODIMD_PASS_CMD=\"\"     # A command to get your password"
         } > "$CONFIG_FILE"
+
+        echo "Config generated to $CONFIG_FILE"
     else
         echo "Usage:"
         echo "  codimd config           # Only works if there is no existing config file"
