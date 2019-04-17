@@ -43,7 +43,7 @@ Example:
     $ env CODIMD_SERVER='https://codimd.example.com' $codi_cli import /path/to/your/content.md
 "
 
-CODIMD_SERVER=${CODIMD_SERVER:="http://127.0.0.1:3000"}  # TODO: allow passing a path to codimd config.json to parse this out
+CODIMD_SERVER=${CODIMD_SERVER:="http://127.0.0.1:3000"}
 
 function publish_note() {
     curl -b $CODIMD_COOKIES_FILE "$CODIMD_SERVER/$1/publish" 2>/dev/null | perl -pe 's/Found. Redirecting to \/(.+?)$/\/$1\n/gs'
@@ -122,6 +122,14 @@ function authenticate() {
         exit 0
     fi
 
+    if [[ $1 == "--config" ]]; then
+        if [[ "$CODIMD_PASS_CMD" ]]; then
+            set -- "--$CODIMD_AUTH_TYPE" "$CODIMD_USERNAME" $($CODIMD_PASS_CMD)
+        else
+            set -- "--$CODIMD_AUTH_TYPE" "$CODIMD_USERNAME" "$CODIMD_PASS"
+        fi
+    fi
+
     if [[ $1 == "--email" ]]; then
         shift
         authenticate_email "$@"
@@ -195,18 +203,34 @@ function delete_history() {
 }
 
 function write_config() {
-    # Backup current config
-    cp "$CONFIG_FILE" "$CONFIG_FILE.bak"
-    {
-        echo "CODIMD_SERVER=$CODIMD_SERVER"
-    } > "$CONFIG_FILE.new"
-    mv "$CONFIG_FILE.new" "$CONFIG_FILE"
+    if [ ! -f "$CONFIG_FILE" ] || [[ $1 == "generate" ]]; then
+        # Generate config file
+        {
+            echo "# CODIMD Configuration file"
+            echo "# Use 'codimd config generate' to reset this file"
+            echo ""
+            echo "# Codimd server url (Default is $CODIMD_SERVER)"
+            echo "CODIMD_SERVER=$CODIMD_SERVER"
+            echo
+            echo "# Authentication"
+            echo "# CODIMD_AUTH_TYPE=email # Auth type"
+            echo "# CODIMD_USERNAME=       # Your username (or email)"
+            echo "# CODIMD_PASS=           # Your password"
+            echo "# CODIMD_PASS_CMD=\"\"     # A command to get your password"
+        } > "$CONFIG_FILE"
+    else
+        echo "Usage:"
+        echo "  codimd config           # Only works if there is no existing config file"
+        echo "  codimd config generate  # Overwrite the config file with default config"
+        exit 1
+    fi
 }
 
 if [[ "$1" == "import" ]]; then
     import_note "$2"
-elif [[ "$1" == "init" ]]; then
-    write_config
+elif [[ "$1" == "config" ]]; then
+    shift
+    write_config "$@"
 elif [[ "$1" == "publish" ]]; then
     publish_note "$2"
 elif [[ "$1" == "export" ]]; then
